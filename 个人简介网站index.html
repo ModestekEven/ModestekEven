@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牛渝文 | AI Growth Consultant</title>
+    
+    <!-- 引入高端设计字体 (中文:思源宋体/英文:Cinzel) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=JetBrains+Mono:wght@300;400&family=Noto+Serif+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- 样式库: Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* ==================== 核心视觉定义 ==================== */
+        :root {
+            --bg-color: #050505;
+            --text-main: #f0f0f0;
+            --brand-cyber: #00f0ff; /* 赛博蓝 */
+            --modal-bg: rgba(10, 10, 10, 0.95);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Noto Serif SC', serif;
+            overflow-x: hidden;
+            /* 只有在PC端隐藏光标，移动端恢复默认以优化体验 */
+        }
+        @media (min-width: 768px) {
+            body { cursor: none; }
+        }
+
+        /* 字体类工具 */
+        .en-font { font-family: 'Cinzel', serif; }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+
+        /* ==================== 自定义鼠标 (PC Only) ==================== */
+        .cursor-dot, .cursor-circle {
+            position: fixed;
+            top: 0; left: 0;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            display: none; /* 移动端默认隐藏 */
+        }
+        @media (min-width: 768px) {
+            .cursor-dot, .cursor-circle { display: block; }
+        }
+        .cursor-dot { width: 4px; height: 4px; background: white; }
+        .cursor-circle { 
+            width: 40px; height: 40px; 
+            border: 1px solid rgba(255,255,255,0.3); 
+            transition: width 0.3s, height 0.3s, background 0.3s;
+        }
+        body.hovered .cursor-circle {
+            width: 60px; height: 60px;
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--brand-cyber);
+            backdrop-filter: blur(2px);
+        }
+
+        /* ==================== Three.js 背景层 ==================== */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
+            z-index: -1;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* ==================== UI 细节 ==================== */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* 标签互动特效 */
+        .tag-pill {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .tag-pill:active { transform: scale(0.98); }
+
+        /* 案例详情模态框 (Full Screen Overlay) */
+        .case-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--modal-bg);
+            backdrop-filter: blur(20px);
+            z-index: 9000;
+            transform: translateY(100%); /* 默认向下隐藏 */
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; /* 允许内部滚动 */
+            opacity: 0;
+            padding: 0;
+        }
+        
+        .modal-inner {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 30px; right: 30px;
+            cursor: pointer;
+            z-index: 9001;
+            padding: 10px;
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 1. 光标层 -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-circle"></div>
+
+    <!-- 2. 背景层 (3D 粒子) -->
+    <div id="canvas-container"></div>
+
+    <!-- 3. 顶部导航 -->
+    <nav class="fixed top-0 w-full p-6 md:p-8 flex justify-between items-center z-50 mix-blend-difference text-white">
+        <div class="text-xl font-bold tracking-widest en-font">NYW.</div>
+        <a href="#contact" class="text-xs code-font border border-white/30 px-4 py-2 rounded-full hover:bg-white hover:text-black transition hover-trigger">WORK WITH ME</a>
+    </nav>
+
+    <main id="smooth-wrapper">
+        
+        <!-- SECTION: HERO (首屏) -->
+        <section class="h-screen flex flex-col justify-center px-6 md:px-24 relative">
+            <div class="z-10 mt-10">
+                <div class="code-font text-cyan-400 text-xs md:text-sm mb-4 tracking-widest animate-pulse">DIGITAL STRATEGIST & FOUNDER</div>
+                <h1 class="text-5xl md:text-8xl font-bold mb-6 leading-tight en-font text-white">
+                    IMPACT<br>
+                    <span class="italic font-light font-serif text-gray-400">Driven.</span>
+                </h1>
+                <p class="max-w-xl text-gray-400 text-base md:text-lg leading-relaxed">
+                    你好，我是<strong class="text-white">牛渝文</strong>。<br>
+                    我不写空洞的代码，我构建<span class="text-cyan-400">商业闭环</span>。<br>
+                    从 0 到 1 的校园流量操盘手，从技术到资本的 AI 增长顾问。
+                </p>
+                <div class="mt-8 text-xs code-font text-gray-600 flex items-center gap-2">
+                    <span>SCROLL TO EXPLORE</span>
+                    <div class="h-[1px] w-10 bg-gray-600"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: IDENTITY (点击交互区) -->
+        <section id="about" class="min-h-screen py-20 px-6 md:px-24 bg-black/60 backdrop-blur-sm relative z-20 border-t border-gray-900">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20">
+                
+                <!-- 左侧：商业叙事 -->
+                <div class="space-y-10">
+                    <h2 class="text-3xl md:text-4xl font-light text-white leading-snug">
+                        不做理论派，<br>
+                        只做<span class="text-cyan-400">交付结果</span>的实战家。
+                    </h2>
+                    <p class="text-gray-400 leading-relaxed text-sm md:text-base">
+                        在 AI 技术爆发的当下，算法本身不再是壁垒，<strong>场景落地</strong>与<strong>商业变现 (ROI)</strong> 才是关键。
+                        <br><br>
+                        作为拥有 21 岁 Z 世代视角 + 投资人逻辑的创业者，我致力于帮助中小企业与高校项目找到 AI 时代的增长杠杆。
+                    </p>
+                    
+                    <!-- 动态数据展示 -->
+                    <div class="grid grid-cols-2 gap-8 border-t border-gray-800 pt-8">
+                        <div>
+                            <div class="text-3xl md:text-4xl font-bold text-white en-font">10k+</div>
+                            <div class="text-xs text-gray-500 mt-2 code-font">PRIVATE TRAFFIC (UV)</div>
+                        </div>
+                        <div>
+                            <div class="text-3xl md:text-4xl font-bold text-white en-font">Top 1%</div>
+                            <div class="text-xs text-gray-500 mt-2 code-font">ELITE FELLOWSHIP</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：交互式案例库 (点击查看详情) -->
+                <div class="flex flex-col justify-center gap-4">
+                    <div class="text-xs text-gray-600 code-font mb-2">▼ CLICK TO VIEW CASE STUDIES</div>
+                    
+                    <!-- Tag 1 -->
+                    <button onclick="openModal('modal-vc')" class="tag-pill hover-trigger group flex justify-between items-center w-full text-left p-6 border border-gray-800 hover:border-cyan-400/50 hover:bg-gray-900 bg-gray-900/20">
+                        <div>
+                            <div class="text-cyan-400 code-font text-xs mb-1">INVESTMENT LOGIC</div>
+                            <div class="text-xl text-white font-serif">校园VC / 投资人视角</div>
+                        </div>
+                        <div class="text-gray-600 group-hover:text-white transition transform group-hover:translate-x-1">→</div>
+                    </button>
+
+                    <!-- Tag 2 -->
+                    <button onclick="openModal('modal-growth')" class="tag-pill hover-trigger group flex justify-between items-center w-full text-left p-6 border border-gray-800 hover:border-cyan-400/50 hover:bg-gray-900 bg-gray-900/20">
+                        <div>
+                            <div class="text-cyan-400 code-font text-xs mb-1">GROWTH HACKING</div>
+                            <div class="text-xl text-white font-serif">盲盒流量操盘 / 10倍增长</div>
+                        </div>
+                        <div class="text-gray-600 group-hover:text-white transition transform group-hover:translate-x-1">→</div>
+                    </button>
+
+                    <!-- Tag 3 -->
+                    <button onclick="openModal('modal-brand')" class="tag-pill hover-trigger group flex justify-between items-center w-full text-left p-6 border border-gray-800 hover:border-cyan-400/50 hover:bg-gray-900 bg-gray-900/20">
+                        <div>
+                            <div class="text-cyan-400 code-font text-xs mb-1">INFLUENCE & AI</div>
+                            <div class="text-xl text-white font-serif">Mindverse / 中青报专访</div>
+                        </div>
+                        <div class="text-gray-600 group-hover:text-white transition transform group-hover:translate-x-1">→</div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: SERVICES (提供的服务) -->
+        <section class="py-20 md:py-32 px-6 md:px-24">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl text-white font-serif mb-4">核心交付服务</h2>
+                <p class="text-gray-500 code-font text-xs tracking-widest">SOLUTIONS I PROVIDE</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- S1 -->
+                <div class="p-8 border border-gray-800 hover:border-cyan-900 transition hover-trigger bg-gradient-to-br from-gray-900/30 to-black">
+                    <div class="text-3xl mb-6 grayscale hover:grayscale-0 transition">⚙️</div>
+                    <h3 class="text-lg text-white mb-4 font-bold">AI 降本增效咨询</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        为中小企业定制 AI 工作流 (SOP)。<br>不仅是教你用 GPT，而是部署私有知识库，实现内容生成自动化，大幅降低运营成本。
+                    </p>
+                </div>
+                <!-- S2 -->
+                <div class="p-8 border border-gray-800 hover:border-cyan-900 transition hover-trigger bg-gradient-to-br from-gray-900/30 to-black">
+                    <div class="text-3xl mb-6 grayscale hover:grayscale-0 transition">🦄</div>
+                    <h3 class="text-lg text-white mb-4 font-bold">BP梳理与投融资对接</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        拒绝"自嗨型"创业。从校园VC投资经理的视角，帮你打磨商业计划书 (BP)，并对接早期高校创投基金渠道。
+                    </p>
+                </div>
+                <!-- S3 -->
+                <div class="p-8 border border-gray-800 hover:border-cyan-900 transition hover-trigger bg-gradient-to-br from-gray-900/30 to-black">
+                    <div class="text-3xl mb-6 grayscale hover:grayscale-0 transition">🌊</div>
+                    <h3 class="text-lg text-white mb-4 font-bold">高校私域全案操盘</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        复用“脱单盲盒”的万级裂变经验。为品牌方提供进校园的全套落地方案，建立精准的大学生私域社群。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: CONTACT -->
+        <section id="contact" class="py-32 flex flex-col items-center text-center bg-gradient-to-t from-gray-900 via-gray-900 to-black">
+            <div class="text-cyan-400 text-xs code-font mb-4">OPEN FOR COLLABORATION</div>
+            <h2 class="text-5xl md:text-7xl font-serif text-white mb-10 hover-trigger">Let's Talk Business.</h2>
+            
+            <div class="flex flex-col md:flex-row gap-6 w-full max-w-md px-6">
+                <div class="flex-1 px-8 py-4 bg-white text-black font-bold tracking-wider hover:bg-cyan-400 transition cursor-copy text-sm hover-trigger" title="点击复制" onclick="copyWechat()">
+                    微信: NiuYuwen_AI
+                </div>
+                <a href="mailto:contact@niuyuwen.com" class="flex-1 px-8 py-4 border border-white text-white font-bold tracking-wider hover:bg-white hover:text-black transition text-sm hover-trigger">
+                    SEND EMAIL
+                </a>
+            </div>
+            
+            <div class="mt-20 text-gray-700 text-xs code-font">
+                © 2025 NIU YUWEN. DESIGNED WITH CODE & INK.
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== 模态框: 案例详情 (Pop-ups) ==================== -->
+
+    <!-- Case 1: 投资逻辑 -->
+    <div id="modal-vc" class="case-modal">
+        <div class="close-btn text-white code-font hover:text-cyan-400 hover-trigger" onclick="closeModal('modal-vc')">[ CLOSE X ]</div>
+        <div class="modal-inner">
+            <div class="code-font text-cyan-400 text-sm mb-4">CASE STUDY 01</div>
+            <h2 class="text-4xl md:text-6xl text-white font-serif mb-12">数创精英班 & 校园VC</h2>
+            
+            <div class="grid md:grid-cols-3 gap-12 text-gray-300">
+                <div class="col-span-1 border-t border-gray-700 pt-6">
+                    <h4 class="text-white font-bold mb-4 code-font">ROLE</h4>
+                    <p class="mb-6 text-sm">投资经理 / 投研副组长</p>
+                    <h4 class="text-white font-bold mb-4 code-font">HIGHLIGHTS</h4>
+                    <ul class="space-y-2 code-font text-xs text-cyan-400">
+                        <li>> 100+ 项目BP筛选</li>
+                        <li>> 《AI搞钱周刊》内容主理</li>
+                        <li>> 北大创业训练营成员</li>
+                    </ul>
+                </div>
+                <div class="col-span-2 border-t border-gray-700 pt-6 space-y-8 leading-7">
+                    <div>
+                        <strong class="text-white block mb-2">💡 痛点 (Challenge)</strong>
+                        大学生创业往往陷于“技术自嗨”，不懂资本语言。
+                    </div>
+                    <div>
+                        <strong class="text-white block mb-2">⚡️ 行动 (Action)</strong>
+                        加入校园VC数创精英班（二期），系统学习早期项目的**估值模型、赛道分析与尽职调查**。负责投研内容的输出，链接一线投资人资源。
+                    </div>
+                    <div>
+                        <strong class="text-white block mb-2">💎 交付价值 (Result)</strong>
+                        通过这段经历，我打通了“创”与“投”的壁垒。现在，我能帮助校园项目**重构商业模式**，让 BP 真正被投资人看懂。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Case 2: 增长操盘 -->
+    <div id="modal-growth" class="case-modal">
+        <div class="close-btn text-white code-font hover:text-cyan-400 hover-trigger" onclick="closeModal('modal-growth')">[ CLOSE X ]</div>
+        <div class="modal-inner">
+            <div class="code-font text-cyan-400 text-sm mb-4">CASE STUDY 02</div>
+            <h2 class="text-4xl md:text-6xl text-white font-serif mb-12">0 成本撬动万级流量</h2>
+            
+            <div class="grid md:grid-cols-3 gap-12 text-gray-300">
+                <div class="col-span-1 border-t border-gray-700 pt-6">
+                    <h4 class="text-white font-bold mb-4 code-font">PROJECT</h4>
+                    <p class="mb-6 text-sm">脱单盲盒 / 校园O2O</p>
+                    <h4 class="text-white font-bold mb-4 code-font">METRICS</h4>
+                    <ul class="space-y-2 code-font text-xs text-cyan-400">
+                        <li>> 10,000+ 用户增长</li>
+                        <li>> ¥10,000+ 营收变现</li>
+                        <li>> 0 广告投放预算</li>
+                    </ul>
+                </div>
+                <div class="col-span-2 border-t border-gray-700 pt-6 space-y-8 leading-7">
+                    <div>
+                        <strong class="text-white block mb-2">💡 机会 (Opportunity)</strong>
+                        校园流量碎片化，但在社交需求上极度聚焦。
+                    </div>
+                    <div>
+                        <strong class="text-white block mb-2">⚡️ 方案 (Solution)</strong>
+                        操盘“脱单盲盒”项目。设计“一块钱买卖关系”的低门槛MVP，结合**私域裂变机制**，利用人性好奇心，两周内实现病毒式传播。
+                    </div>
+                    <div>
+                        <strong class="text-white block mb-2">💎 交付价值 (Result)</strong>
+                        沉淀出一套可复用的**校园流量获取SOP**，涵盖地推、社群运营与后端变现，为品牌进校提供经过验证的通路。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Case 3: 品牌IP -->
+    <div id="modal-brand" class="case-modal">
+        <div class="close-btn text-white code-font hover:text-cyan-400 hover-trigger" onclick="closeModal('modal-brand')">[ CLOSE X ]</div>
+        <div class="modal-inner">
+            <div class="code-font text-cyan-400 text-sm mb-4">CASE STUDY 03</div>
+            <h2 class="text-4xl md:text-6xl text-white font-serif mb-12">IP影响力与国学内核</h2>
+            
+            <div class="grid md:grid-cols-3 gap-12 text-gray-300">
+                <div class="col-span-1 border-t border-gray-700 pt-6">
+                    <h4 class="text-white font-bold mb-4 code-font">IDENTITY</h4>
+                    <p class="mb-6 text-sm">Mindverse大使 / 国学社社长</p>
+                    <h4 class="text-white font-bold mb-4 code-font">IMPACT</h4>
+                    <ul class="space-y-2 code-font text-xs text-cyan-400">
+                        <li>> Mindverse 核心社群</li>
+                        <li>> 中国青年报专访嘉宾</li>
+                        <li>> Datawhale 分享嘉宾</li>
+                    </ul>
+                </div>
+                <div class="col-span-2 border-t border-gray-700 pt-6 space-y-8 leading-7">
+                    <div>
+                        <strong class="text-white block mb-2">💡 思考 (Thought)</strong>
+                        科技不仅是工具，也是文化的载体。
+                    </div>
+                    <div>
+                        <strong class="text-white block mb-2">⚡️ 实践 (Practice)</strong>
+                        作为 Mindverse 校园大使和国学社长，我不仅推广 AI 工具，更受邀在**中国青年报**分享“00后如何看待AI与传统文化”的结合。
+                    </div>
+                    <div>
+                        <strong class="text-white block mb-2">💎 交付价值 (Result)</strong>
+                        展示了**独立思考**与**宏观视野**。这使我不仅仅是一名开发者，更是一个有文化底蕴、能进行品牌深度叙事的创业者。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 脚本逻辑区 (JavaScript) ==================== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // --- 1. 案例模态框动画 (GSAP) ---
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            document.body.style.overflow = 'hidden'; // 禁止背景滚动
+            
+            // 动画: 从下方升起，且带有模糊效果
+            gsap.to(modal, {
+                y: '0%',
+                opacity: 1,
+                duration: 0.8,
+                ease: 'power4.inOut',
+                display: 'flex'
+            });
+            
+            // 内容元素的依次浮现
+            gsap.fromTo(modal.querySelectorAll('h2, .grid'), 
+                { y: 50, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, delay: 0.3 }
+            );
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            document.body.style.overflow = 'auto'; // 恢复滚动
+            
+            gsap.to(modal, {
+                y: '100%',
+                opacity: 0,
+                duration: 0.6,
+                ease: 'power3.inIn',
+                onComplete: () => { modal.style.display = 'none'; }
+            });
+        }
+
+        // --- 2. 复制微信逻辑 ---
+        function copyWechat() {
+            navigator.clipboard.writeText("NiuYuwen_AI").then(() => {
+                alert("微信号已复制到剪贴板！期待与您的沟通。");
+            });
+        }
+
+        // --- 3. 自定义光标跟随 (GSAP) ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorCircle = document.querySelector('.cursor-circle');
+        
+        document.addEventListener('mousemove', (e) => {
+            // 圆点无延迟
+            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            // 圆圈带阻尼
+            gsap.to(cursorCircle, { x: e.clientX, y: e.clientY, duration: 0.4 });
+        });
+
+        // 悬停交互增强
+        document.querySelectorAll('.hover-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovered'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovered'));
+        });
+
+        // --- 4. Three.js 粒子星云背景 ---
+        // 核心视觉代码：创建流动的 3D 数据星空
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const geometry = new THREE.BufferGeometry();
+        const count = 2000; // 粒子数量
+        const posArray = new Float32Array(count * 3);
+
+        for(let i = 0; i < count * 3; i++) {
+            // 让粒子在空间中随机分布
+            posArray[i] = (Math.random() - 0.5) * 12; 
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const material = new THREE.PointsMaterial({
+            size: 0.02,
+            color: 0x00f0ff, // 核心赛博色
+            transparent: true,
+            opacity: 0.6,
+        });
+
+        const particlesMesh = new THREE.Points(geometry, material);
+        scene.add(particlesMesh);
+        camera.position.z = 3;
+
+        // 鼠标互动变量
+        let mouseX = 0; 
+        let mouseY = 0;
+        
+        // 窗口鼠标位置捕捉
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX / window.innerWidth - 0.5;
+            mouseY = event.clientY / window.innerHeight - 0.5;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            // 自动旋转
+            particlesMesh.rotation.y += 0.0005;
+            
+            // 跟随鼠标的微扰动
+            particlesMesh.rotation.x += (mouseY * 0.5 - particlesMesh.rotation.x) * 0.05;
+            particlesMesh.rotation.y += (mouseX * 0.5 - particlesMesh.rotation.y) * 0.05;
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 响应式调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
